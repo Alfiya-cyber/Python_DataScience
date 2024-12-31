@@ -40,10 +40,10 @@ class Customer:
     def apply_interest(self):
         with self.lock:
             if self.account_type == "savings":
-                interest = self.balance * 15 
+                interest = self.balance * 0.01  # 1% interest
                 self.balance += interest
                 self.transactions.append({"type": "Interest", "amount": interest})
-            print("Interest of", interest, "applied successfully to", self.name + "'s account.")
+                print("Interest of", interest, "applied successfully to", self.name + "'s account.")
 
 def read_customers(file_name):
     customers = {}
@@ -60,7 +60,7 @@ def read_customers(file_name):
 
 def periodic_interest_application(customers, stop_event):
     while not stop_event.is_set():
-        time.sleep(100)  # Apply interest every 10 seconds
+        time.sleep(100)  # Apply interest every 100 seconds
         for customer in customers.values():
             customer.apply_interest()
 
@@ -111,7 +111,9 @@ def main():
         elif choice == 3:
             try:
                 customer_id = int(input("Enter Customer ID: "))
-                print(customers[customer_id].show_transactions())
+                transactions = customers[customer_id].show_transactions()
+                for transaction in transactions:
+                    print(transaction)
             except ValueError:
                 print("Invalid input, please enter a valid Customer ID.")
             except KeyError:
@@ -127,8 +129,9 @@ def main():
                 print("Customer ID not found, please try again.")
 
         elif choice == 5:
-            stop_event.set()  # Set the stop event to stop the interest application thread
-            interest_thread.join()  # Wait for the interest application thread to finish
+            stop_event.set()  # Stop the periodic interest application thread
+            interest_thread.join()  # Wait for the interest thread to finish
+            print("Exiting the program.")
             break
 
         else:
