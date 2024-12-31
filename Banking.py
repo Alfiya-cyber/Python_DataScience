@@ -1,4 +1,6 @@
 import csv
+import threading
+import time
 
 class Customer:
     def __init__(self, customer_id, name, balance, salary, account_type):
@@ -8,34 +10,39 @@ class Customer:
         self.salary = salary
         self.account_type = account_type
         self.transactions = []
+        self.lock = threading.Lock()
 
     def deposit(self, amount):
         if amount <= 0:
             print("Deposit amount must be more than zero")
             return
-        self.balance += amount
-        self.transactions.append({"type": "Deposited", "amount": amount})
+        with self.lock:
+            self.balance += amount
+            self.transactions.append({"type": "Deposited", "amount": amount})
         print(amount, "deposited successfully to", self.name + "'s account.")
 
     def withdraw(self, amount):
         if amount <= 0:
             print("Withdrawal amount must be more than zero")
             return
-        if amount > self.balance:
-            print("Balance is not sufficient")
-            return
-        self.balance -= amount
-        self.transactions.append({"type": "Withdrawn", "amount": amount})
+        with self.lock:
+            if amount > self.balance:
+                print("Balance is not sufficient")
+                return
+            self.balance -= amount
+            self.transactions.append({"type": "Withdrawn", "amount": amount})
         print(amount, "withdrawn successfully from", self.name + "'s account.")
 
     def show_transactions(self):
-        return self.transactions
+        with self.lock:
+            return self.transactions
 
     def apply_interest(self):
-        if self.account_type == "savings":
-            interest = self.balance * 0.01  # 1% interest
-            self.balance += interest
-            self.transactions.append({"type": "Interest", "amount": interest})
+        with self.lock:
+            if self.account_type == "savings":
+                interest = self.balance * 15 
+                self.balance += interest
+                self.transactions.append({"type": "Interest", "amount": interest})
             print("Interest of", interest, "applied successfully to", self.name + "'s account.")
 
 def read_customers(file_name):
@@ -51,8 +58,21 @@ def read_customers(file_name):
             customers[customer_id] = Customer(customer_id, name, balance, salary, account_type)
     return customers
 
+def periodic_interest_application(customers, stop_event):
+    while not stop_event.is_set():
+        time.sleep(100)  # Apply interest every 10 seconds
+        for customer in customers.values():
+            customer.apply_interest()
+
 # Read customers from CSV
 customers = read_customers("C:/Users/AlfiyaTamboli/Documents/GitHub/Python_DataScience/CASE STUDY/Data.csv")
+
+# Event to stop the periodic interest application thread
+stop_event = threading.Event()
+
+# Start a daemon thread to apply interest periodically
+interest_thread = threading.Thread(target=periodic_interest_application, args=(customers, stop_event), daemon=True)
+interest_thread.start()
 
 def main():
     while True:
@@ -107,6 +127,8 @@ def main():
                 print("Customer ID not found, please try again.")
 
         elif choice == 5:
+            stop_event.set()  # Set the stop event to stop the interest application thread
+            interest_thread.join()  # Wait for the interest application thread to finish
             break
 
         else:
@@ -114,4 +136,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-3
