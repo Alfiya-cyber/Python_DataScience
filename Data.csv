@@ -1,0 +1,6 @@
+CustomerID,Name,AccountBalance,Salary,AccountType
+101,Ross,5000,45000,savings
+102,Rachel,3000,55000,savings
+103,Chandler,7000,60000,savings
+104,Monica,8000,52000,savings
+105,Joey,9000,48000,savings
